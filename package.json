@@ -1,0 +1,27 @@
+{
+  "name": "simplernotion",
+  "version": "1.0.1",
+  "description": "This project is a simpler way of using the Notion API to interact with your Notion space.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nelvazz/simplernotion.git"
+  },
+  "keywords": [
+    "notion-api",
+    "notion",
+    "api"
+  ],
+  "author": "nelvazz",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Nelvazz/simplernotion/issues"
+  },
+  "homepage": "https://github.com/Nelvazz/simplernotion#readme",
+  "dependencies": {
+    "@notionhq/client": "^2.2.15"
+  }
+}
