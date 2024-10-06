@@ -1,40 +1,40 @@
-const { Client } = require('@notionhq/client');
-const fs = require('fs');
+import { Client } from '@notionhq/client';
 
 class NotionClient {
     constructor(auth) {
         this.client = new Client({
             auth: auth
         });
+        this.users = new UserManager(this.client);
     }
 
     async query(type, id) {
         if (type === 'database') {
-            const database = await this.client.databases.retrieve({ database_id: id }).catch(err => {
-                throw new Error("Invalid database Id or the database doesn't exist")
+            const DATABASE = await this.client.databases.retrieve({ database_id: id }).catch(err => {
+                throw new Error("Invalid database Id or the database doesn't exist");
             });
-            const pages = await this.#fetchAllPages(id);
-            return new Database(this.client, database, pages);
+            const PAGES = await this.#fetchAllPages(id);
+            return new Database(this.client, DATABASE, PAGES);
         }
     }
     async #fetchAllPages(databaseId) {
         let hasMore = true;
         let cursor = undefined;
-        const pages = new Map();
+        const PAGES = new Map();
 
         while (hasMore) {
-            const response = await this.client.databases.query({
+            const RESPONSE = await this.client.databases.query({
                 database_id: databaseId,
                 start_cursor: cursor
             });
-            response.results.forEach(page => {
+            RESPONSE.results.forEach(page => {
                 const PAGE = new Page(this.client, page);
-                pages.set(PAGE.id, PAGE);
+                PAGES.set(PAGE.id, PAGE);
             });
-            hasMore = response.has_more;
-            cursor = response.next_cursor;
+            hasMore = RESPONSE.has_more;
+            cursor = RESPONSE.next_cursor;
         }
-        return pages;
+        return PAGES;
     }
 }
 
@@ -57,181 +57,37 @@ class Database {
         this.public_url = database.public_url;
         this.archived = database.archived;
         this.in_trash = database.in_trash;
-        this.pages = new PageManager(pages);
+        this.pages = new PageManager(client, database, pages);
     }
 }
-/*
-class Cache {
-     constructor(client, database) {
-        this.cache = new Map();
-        this.size = 0;
-        this._loadPages(client, database); // Load pages when Pages instance is created
+
+class PageManager {
+    #client;
+    #database;
+    constructor(client, database, pages) {
+        this.#client = client;
+        this.#database = database;
+        this.cache = new Collection(pages);
     }
-
-    // Method to load all pages from the database and store them in cache
-    async _loadPages(client, database) {
-        let hasMore = true;
-        let cursor = undefined;
-
-        while (hasMore) {
-            const response = await client.databases.query({
-                database_id: database.id,
-                start_cursor: cursor
-            });
-            response.results.forEach(page => {
-                const PAGE = new Pages(client, database, page);
-                this.cache = this.cache.set(PAGE.id, PAGE);
-            })
-
-            hasMore = response.has_more;
-            cursor = response.next_cursor;
-        }
-        this.size = this.cache.size;
-    }
-
-    async create(properties, children = []) {
+    async create(properties) {
         try {
-            const response = await this.client.pages.create({
-                parent: { database_id: this.database.id },
-                properties: properties,
-                children: children
+            const RESPONSE = await this.#client.pages.create({
+                parent: {
+                    database_id: this.#database.id,
+                },
+                properties: convertProperties(this.#database.properties, properties),
             });
-            console.log('Page created:', response);
-            return response;
+            return new Page(this.#client, RESPONSE);
         } catch (error) {
             console.error('Error creating page:', error);
         }
     }
-    async get(pageId) {
-
-    }
-}*/
-/*class Cache {
-    #client;
-    #databaseId;
-    #pages;
-    #cacheLoaded;
-    #loadingPromise;
-    constructor(client, databaseId) {
-        this.#client = client;
-        this.#databaseId = databaseId;
-        this.#pages = new Map();
-        this.#cacheLoaded = false;
-        this.#loadingPromise = null;
-    }
-
-    get cache() {
-        if (!this.#cacheLoaded) {
-            if (!this.#loadingPromise) {
-                this.#loadingPromise = this.#loadPages();
-            }
-            return this.#loadingPromise;
-        } else {
-            return this.#pages;
-        }
-    }
-
-    async #loadPages() {
-        let hasMore = true;
-        let cursor = undefined;
-
-        while (hasMore) {
-            const response = await this.#client.databases.query({
-                database_id: this.#databaseId,
-                start_cursor: cursor
-            });
-            response.results.forEach(page => {
-                const PAGE = new Page(this.#client, page);
-                this.#pages.set(PAGE.id, PAGE);
-            });
-            hasMore = response.has_more;
-            cursor = response.next_cursor;
-        }
-        this.#cacheLoaded = true;
-        return this.cache;
-    }
-}*/
-
-class PageManager {
-    constructor(pages) {
-        this.cache = new Collection(pages);
-    }
-}
-class Collection {
-    constructor(map) {
-        this[''] = map;
-        this.size = map.size;
-    }
-
-    // Method to add a new item to the collection
-    set(key, value) {
-        this[''].set(key, value);
-    }
-
-    // Method to retrieve an item by key
-    get(key) {
-        return this[''].get(key);
-    }
-
-    // Method to check if a key exists in the collection
-    has(key) {
-        return this[''].has(key);
-    }
-
-    // Method to remove an item by key
-    delete(key) {
-        return this[''].delete(key);
-    }
-
-    // Method to retrieve all keys in the collection
-    keys() {
-        return Array.from(this[''].keys());
-    }
-
-    // Method to retrieve all values in the collection
-    values() {
-        return Array.from(this[''].values());
-    }
-
-    // Method to filter items based on a callback
-    filter(callback) {
-        const results = [];
-        for (const [key, value] of this[''].entries()) {
-            if (callback(value, key)) {
-                results.push([key, value]); // Store key-value pairs that match the condition
-            }
-        }
-        return results; // Return array of matching key-value pairs
-    }
-
-    // Method to find a single item based on a callback
-    find(callback) {
-        for (const [key, value] of this[''].entries()) {
-            if (callback(value, key)) {
-                return value; // Return the first matching value
-            }
-        }
-        return undefined; // Return undefined if no match found
-    }
-
-    // Method to get all entries as an array
-    entries() {
-        return Array.from(this[''].entries());
-    }
-
-    // Method to get the size of the collection
-    size() {
-        return this[''].size;
-    }
-
-    // Method to clear all items from the collection
-    clear() {
-        this[''].clear();
-    }
 }
 
 class Page {
+    #client;
     constructor (client, page) {
+        this.#client = client;
         this.archived = page.archived;
         this.cover = page.archived;
         this.created_by = page.created_by;
@@ -246,6 +102,211 @@ class Page {
         this.public_url = page.public_url;
         this.url = page.url;
     }
+    /*async move(databaseId, properties) {
+        !properties ? console.error("Missing properties, they will be empty in your new database") : null;
+        // try {
+            let keyTitle = null;
+            for (const key in properties) {
+                if (properties[key].id === "title") {
+                    keyTitle = key;
+                    break;
+                }
+            }
+            await this.#client.pages.update({
+                page_id: this.id,
+                parent: {
+                    database_id: databaseId
+                },
+            });
+
+            const RESPONSE = await this.#client.pages.update({
+                page_id: this.id,
+                properties: {}
+            });
+            console.log(`Page ${this.id} moved to database ${databaseId}`);
+            // return RESPONSE;
+        // } catch (error) {
+            // console.error('Error moving the page:', error);
+        // }
+    }*/
+    async update(properties) {
+        try {
+            const RESPONSE = await this.#client.pages.update({
+                page_id: this.id,
+                properties: convertProperties(this.properties, properties),
+            });
+            this.properties = RESPONSE.properties;
+        } catch (error) {
+            console.error('Error updating page:', error);
+        }
+    }
 }
 
-module.exports = NotionClient;
+class UserManager {
+    #client;
+    constructor(client) {
+        this.#client = client;
+    }
+    async list() {
+        let hasMore = true;
+        let cursor = undefined;
+        const USERS = new Map();
+
+        while (hasMore) {
+            const RESPONSE = await this.#client.users.list({
+                start_cursor: cursor
+            });
+            RESPONSE.results.forEach(user => {
+                const USER = new User(user);
+                USERS.set(USER.id, USER);
+            });
+            hasMore = RESPONSE.has_more;
+            cursor = RESPONSE.next_cursor;
+        }
+        return new Collection(USERS);
+    }
+}
+
+class User {
+    constructor (user) {
+        this.id = user.id;
+        this.type = user.type;
+        this.avatar_url = user.avatar_url;
+        this.name = user.name;
+        this.person = user.person;
+    }
+}
+
+class Collection extends Map {
+    constructor(map) {
+        super(map);
+    }
+    filter(callback) {
+        const RESULTS = [];
+        for (const [KEY, VALUE] of this.entries()) {
+            if (callback(VALUE, KEY)) {
+                RESULTS.push([KEY, VALUE]);
+            }
+        }
+        return RESULTS;
+    }
+}
+
+function convertProperties(databaseProperties, properties) {
+    let notionProperties = {};
+
+    for (const KEY in properties) {
+        switch (databaseProperties[KEY].type) {
+            case "title":
+                notionProperties[KEY] = {
+                    "title": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": properties[KEY]
+                            }
+                        }
+                    ]
+                };
+                break;
+            case "rich_text":
+                notionProperties[KEY] = {
+                    "rich_text": properties[KEY].map(textItem => ({
+                        "type": "text",
+                        "text": {
+                            "content": textItem
+                        }
+                    }))
+                };
+                break;
+            case "number":
+                if (typeof(properties[KEY]) !== 'number') {
+                    console.error(KEY + ': Specified value is of type ' + typeof(properties[KEY]) + ', not number');
+                    break;
+                } else {
+                    notionProperties[KEY] = {
+                        "number": properties[KEY]
+                    };
+                    break;
+                }
+            case "select":
+                notionProperties[KEY] = {
+                    "select": {
+                        "name": properties[KEY][0]
+                    }
+                };
+                break;
+            case "multi_select":
+                const t = properties[KEY].map(item => ({
+                    "name": item
+                }))
+                notionProperties[KEY] = {
+                    "multi_select": properties[KEY].map(item => ({
+                        "name": item
+                    }))
+                };
+                break;
+            case "status":
+                notionProperties[KEY] = {
+                    "status": {
+                        "name": properties[KEY][0]
+                    }
+                };
+                break;
+            case "date":
+                notionProperties[KEY] = {
+                    "date": {
+                        "start": properties[KEY].start,
+                        "end": properties[KEY].end || null,
+                        "time_zone": properties[KEY].time_zone || null
+                    }
+                };
+                break;
+            case "people":
+                properties[KEY].filter(person => person.type == "bot").length > 0 ? console.error(KEY + ': Bot user cannot be added to people properties') : undefined;
+                notionProperties[KEY] = {
+                    "people": properties[KEY].filter(person => person.type !== "bot").map(person => ({
+                        "object": "user",
+                        "id": person.id
+                    }))
+                };
+                break;
+            case "files":
+                notionProperties[KEY] = {
+                    "files": properties[KEY].map(file => ({
+                        "name": file.name,
+                        "type": "external",
+                        "external": {
+                            "url": file.url
+                        }
+                    }))
+                };
+                break;
+            case "checkbox":
+                notionProperties[KEY] = {
+                    "checkbox": properties[KEY]
+                };
+                break;
+            case "url":
+                notionProperties[KEY] = {
+                    "url": properties[KEY]
+                };
+                break;
+            case "email":
+                notionProperties[KEY] = {
+                    "email": properties[KEY]
+                };
+                break;
+            case "phone_number":
+                notionProperties[KEY] = {
+                    "phone_number": properties[KEY]
+                };
+                break;
+            default:
+                throw new Error(`Unknown property type: ${databaseProperties[KEY].type}`);
+        }
+    }
+    return notionProperties;
+}
+
+export default NotionClient;
