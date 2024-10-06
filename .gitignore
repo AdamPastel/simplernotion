@@ -226,3 +226,4 @@ node_modules/whatwg-url/lib/URL-impl.js
 node_modules/whatwg-url/lib/url-state-machine.js
 node_modules/whatwg-url/lib/URL.js
 node_modules/whatwg-url/lib/utils.js
+test.js
