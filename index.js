@@ -140,6 +140,15 @@ class Page {
             console.error('Error updating page:', error);
         }
     }
+    async delete() {
+        try {
+            await this.#client.pages.delete({
+                page_id: this.id,
+            });
+        } catch (error) {
+            console.error('Error deleting page:', error);
+        }
+    }
 }
 
 class UserManager {
