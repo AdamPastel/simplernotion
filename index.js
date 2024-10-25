@@ -1,4 +1,6 @@
 import { Client } from '@notionhq/client';
+import fs from 'fs';
+import { markAsUntransferable } from 'worker_threads';
 
 class NotionClient {
     constructor(auth) {
@@ -69,7 +71,7 @@ class PageManager {
         this.#database = database;
         this.cache = new Collection(pages);
     }
-    async create(properties) {
+    async create(properties, pageContent) {
         try {
             const RESPONSE = await this.#client.pages.create({
                 parent: {
@@ -77,6 +79,87 @@ class PageManager {
                 },
                 properties: convertProperties(this.#database.properties, properties),
             });
+            RESPONSE.content = [];
+            if (pageContent) {
+                function parseMarkdownToBlocks(markdownText) {
+                    try { markdownText = fs.readFileSync(pageContent, 'utf-8'); }
+                    catch { markdownText = pageContent; }
+                    let insideCodeBlock = false;
+                    let codeBlockContent = [];
+                    let codeBlockLanguage = 'plain_text';
+                    const lines = markdownText.split('\n');
+                    const blocks = [];
+                
+                    lines.forEach(line => {
+                        if (line.startsWith('```')) {
+                            if (insideCodeBlock) {
+                                blocks.push({
+                                    type: 'code',
+                                    code: {
+                                        rich_text: [{
+                                            type: 'text',
+                                            text: { content: codeBlockContent.join('\n') }
+                                        }],
+                                        language: codeBlockLanguage
+                                    }
+                                });
+                                codeBlockContent = [];
+                                insideCodeBlock = false;
+                            } else {
+                                insideCodeBlock = true;
+                                codeBlockLanguage = line.slice(3).trim() || 'plain_text';
+                            }
+                        } else if (insideCodeBlock) {
+                            codeBlockContent.push(line);
+                        } else if (line.startsWith('# ')) {
+                            blocks.push({
+                                type: 'heading_1',
+                                heading_1: { rich_text: markdownToRichText(line.replace('# ', '')) }
+                            });
+                        } else if (line.startsWith('## ')) {
+                            blocks.push({
+                                type: 'heading_2',
+                                heading_2: { rich_text: markdownToRichText(line.replace('## ', '')) }
+                            });
+                        } else if (line.startsWith('### ')) {
+                            blocks.push({
+                                type: 'heading_3',
+                                heading_3: { rich_text: markdownToRichText(line.replace('### ', '')) }
+                            });
+                        } else if (line.startsWith('- ')) {
+                            blocks.push({
+                                type: 'bulleted_list_item',
+                                bulleted_list_item: { rich_text: markdownToRichText(line.replace('- ', '')) }
+                            });
+                        } else if (line.startsWith('1. ')) {
+                            blocks.push({
+                                type: 'numbered_list_item',
+                                numbered_list_item: { rich_text: markdownToRichText(line.replace('1. ', '')) }
+                            });
+                        } else if (line.startsWith('> ')) {
+                            blocks.push({
+                                type: 'quote',
+                                quote: { rich_text: markdownToRichText(line.replace('> ', '')) }
+                            });
+                        } else if (line.startsWith('---')) {
+                            blocks.push({ type: 'divider' });
+                        } else {
+                            blocks.push({
+                                type: 'paragraph',
+                                paragraph: { rich_text: markdownToRichText(line) }
+                            });
+                        }
+                    });
+                
+                    return blocks;
+                }
+
+                RESPONSE.content = parseMarkdownToBlocks("");
+                await this.#client.blocks.children.append({
+                    block_id: RESPONSE.id,
+                    children: parseMarkdownToBlocks(""),
+                });
+            }
             return new Page(this.#client, RESPONSE);
         } catch (error) {
             console.error('Error creating page:', error);
@@ -89,6 +172,7 @@ class Page {
     constructor (client, page) {
         this.#client = client;
         this.archived = page.archived;
+        this.content = page.content;
         this.cover = page.archived;
         this.created_by = page.created_by;
         this.created_time = page.created_time;
@@ -98,6 +182,7 @@ class Page {
         this.last_edited_by = page.last_edited_by;
         this.last_edited_time = page.last_edited_time;
         this.object = page.object;
+        this.parent = page.parent;
         this.properties = page.properties;
         this.public_url = page.public_url;
         this.url = page.url;
@@ -140,6 +225,33 @@ class Page {
             console.error('Error updating page:', error);
         }
     }
+    async duplicate()  {
+        try {
+            const pageProperties = this.properties;
+            const newPageProperties = {};
+            for (const [key, value] of Object.entries(pageProperties)) {
+                switch (value.type) {
+                    case 'button':
+                    case 'formula':
+                    case 'created_by':
+                    case 'created_time':
+                    case 'last_edited_time':
+                    case 'last_edited_by':
+                    case 'unique_id':
+                        break;
+                    default: newPageProperties[key] = value; break;
+                }
+            }
+
+            const newPage = await this.#client.pages.create({
+                parent: this.parent,
+                properties: newPageProperties
+            });
+            return newPage;
+        } catch (error) {
+            console.error("Error duplicating page:", error);
+        }
+    }
     async delete() {
         try {
             await this.#client.pages.delete({
@@ -147,6 +259,16 @@ class Page {
             });
         } catch (error) {
             console.error('Error deleting page:', error);
+        }
+    }
+    async edit(markers, newContent) {
+        try {
+            const response = await this.#client.blocks.children.list({
+                block_id: this.id,
+            });
+            console.log("Page content blocks:", response.results);
+        } catch (error) {
+            console.error("Error retrieving page content:", error);
         }
     }
 }
@@ -220,12 +342,7 @@ function convertProperties(databaseProperties, properties) {
                 break;
             case "rich_text":
                 notionProperties[KEY] = {
-                    "rich_text": properties[KEY].map(textItem => ({
-                        "type": "text",
-                        "text": {
-                            "content": textItem
-                        }
-                    }))
+                    "rich_text": markdownToRichText(properties[KEY])
                 };
                 break;
             case "number":
@@ -316,6 +433,111 @@ function convertProperties(databaseProperties, properties) {
         }
     }
     return notionProperties;
+}
+
+function markdownToRichText(markdownText) {
+    const richTextArray = [];
+    const stylesStack = [];
+    let currentText = '';
+    let currentStyles = {
+        bold: false,
+        italic: false,
+        underline: false,
+        strikethrough: false,
+        code: false,
+        color: 'default'
+    };
+    const patterns = [
+        { marker: '**', style: 'bold' },
+        { marker: '//', style: 'italic' },
+        { marker: '__', style: 'underline' },
+        { marker: '~~', style: 'strikethrough' },
+        { marker: '`', style: 'code' }
+    ];
+
+    let i = 0;
+    function applyCurrentText() {
+        if (currentText) {
+            richTextArray.push({
+                type: 'text',
+                text: { content: currentText },
+                annotations: { ...currentStyles },
+            });
+            currentText = '';
+        }
+    }
+
+    while (i < markdownText.length) {
+        let matched = false;
+
+        for (const { marker, style } of patterns) {
+            if (markdownText.slice(i, i + marker.length) === marker) {
+                applyCurrentText();
+
+                if (stylesStack.length > 0 && stylesStack[stylesStack.length - 1] === style) {
+                    // If the style is already active, we're closing it
+                    stylesStack.pop();
+                    currentStyles[style] = false;
+                } else {
+                    // Otherwise, we're opening a new style
+                    stylesStack.push(style);
+                    currentStyles[style] = true;
+                }
+
+                i += marker.length;
+                matched = true;
+                break;
+            }
+        }
+        if (!matched && markdownText[i] === '[') {
+            const closeBracket = markdownText.indexOf(']', i);
+            const openParen = markdownText.indexOf('(', closeBracket);
+            const closeParen = markdownText.indexOf(')', openParen);
+
+            if (closeBracket !== -1 && openParen === closeBracket + 1 && closeParen !== -1) {
+                applyCurrentText();
+
+                const linkText = markdownText.slice(i + 1, closeBracket);
+                const url = markdownText.slice(openParen + 1, closeParen);
+
+                richTextArray.push({
+                    type: 'text',
+                    text: {
+                        content: linkText,
+                        link: { url: url }
+                    },
+                    annotations: { ...currentStyles }
+                });
+
+                i = closeParen + 1;
+                matched = true;
+            }
+        }
+        if (!matched && markdownText[i] === '{') {
+            const closeCurly = markdownText.indexOf('}', i);
+
+            if (closeCurly !== -1) {
+                applyCurrentText();
+                const color = markdownText.slice(i + 1, closeCurly);
+                if ((currentStyles.color !== 'default' && markdownText.slice(i, i + color.length + 2) == `{${color}}`) || color.includes('/')) {
+                    stylesStack.pop();
+                    currentStyles.color = 'default';
+                    i += color.length + 2;
+                } else {
+                    stylesStack.push('color');
+                    currentStyles.color = color;
+                    i = closeCurly + 1;
+                }
+                matched = true;
+            }
+        }
+        if (!matched) {
+            currentText += markdownText[i];
+            i++;
+        }
+    }
+    applyCurrentText();
+    return richTextArray;
 }
 
 export default NotionClient;
