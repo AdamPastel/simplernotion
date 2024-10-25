@@ -8,7 +8,7 @@ Execute this command in your terminal `npm install simplernotion`.
 
 ## Usage
 
-### 1. Import the Module
+### 1. Initialize the Client
 
 First, import the module and initialize the Notion client:
 
@@ -25,30 +25,67 @@ To query a Notion database, use the following function:
 const database = await client.query('database', 'YOUR_DATABASE_ID');
 ```
 
-### 3. Create a Page
+### 3. Creating a Page with Properties and Markdown Content
 
 To create a new page in a Notion database, use the following code:
 
 ```jsx
-const page = await database.pages.create({
-  "Property Name": "Property content",
-  "Title": "Page Title",
-  "Number": 100,
-  "Selection": ["Element"]
-});
+const properties = {
+    Title: "My New Page",
+    Status: ["Not Started"],
+};
+
+const markdownContent = `# Heading 1
+This is **bold text** and //italic text// with __underline__ and ~~strikethrough~~.
+Here's a code block:
+\`\`\`javascript
+console.log("Hello, Notion!");
+\`\`\`
+{blue}This text will appear blue in Notion.{/blue}`;
+
+const newPage = await database.pages.create(properties, markdownContent);
+console.log("New Page Created:", newPage.id);
 ```
 
-### 4. Update a Page
+### 4. Updating Page Properties
 
 You can update the properties of an existing page as follows:
 
 ```jsx
-page.update({
-  "Title": "New Page Title"
-});
+const page = database.pages.cache.get('page-id');
+
+const updatedProperties = {
+	  Title: "Updated Title",
+    Status: ["In Progress"],
+};
+
+await page.update(updatedProperties);
+console.log("Page updated with new properties");
 ```
 
-### 5. Retrieve Users
+### 5. Duplicating a Page
+
+Duplicate an existing page along with its properties.
+
+```jsx
+const page = database.pages.cache.get('page-id');
+
+const duplicatedPage = await page.duplicate();
+console.log("Duplicated Page ID:", duplicatedPage.id);
+```
+
+### 6. Deleting a Page
+
+To get users from your Notion workspace:
+
+```jsx
+const page = database.pages.cache.get('page-id');
+
+await page.delete();
+console.log("Page deleted");
+```
+
+### 7. Retrieve Users
 
 To get users from your Notion workspace:
 
