@@ -1,6 +1,5 @@
-import { Client } from '@notionhq/client';
-import fs from 'fs';
-import { markAsUntransferable } from 'worker_threads';
+const { Client } = require('@notionhq/client');
+const fs = require('fs');
 
 class NotionClient {
     constructor(auth) {
@@ -150,10 +149,8 @@ class PageManager {
                             });
                         }
                     });
-                
                     return blocks;
                 }
-
                 RESPONSE.content = parseMarkdownToBlocks("");
                 await this.#client.blocks.children.append({
                     block_id: RESPONSE.id,
@@ -355,6 +352,7 @@ function convertProperties(databaseProperties, properties) {
                     };
                     break;
                 }
+                break;
             case "select":
                 notionProperties[KEY] = {
                     "select": {
@@ -540,4 +538,4 @@ function markdownToRichText(markdownText) {
     return richTextArray;
 }
 
-export default NotionClient;
+module.exports = NotionClient;
