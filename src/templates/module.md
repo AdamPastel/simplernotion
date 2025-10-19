@@ -40,7 +40,7 @@ You can update the properties of an existing page as follows:
 const page = database.pages.cache.get('page-id');
 
 const updatedProperties = {
-	  Title: "Updated Title",
+	Title: "Updated Title",
     Status: ["In Progress"],
 };
 

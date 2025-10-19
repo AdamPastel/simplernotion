@@ -6,22 +6,22 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "type": "commonjs",
+  "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Nelvazz/simplernotion.git"
+    "url": "git+https://github.com/AdamPastel/simplernotion.git"
   },
   "keywords": [
     "notion-api",
     "notion",
     "api"
   ],
-  "author": "nelvazz",
+  "author": "adampastel",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Nelvazz/simplernotion/issues"
+    "url": "https://github.com/AdamPastel/simplernotion/issues"
   },
-  "homepage": "https://github.com/Nelvazz/simplernotion#readme",
+  "homepage": "https://github.com/AdamPastel/simplernotion#readme",
   "dependencies": {
     "@notionhq/client": "^2.2.15",
     "fs": "^0.0.1-security"

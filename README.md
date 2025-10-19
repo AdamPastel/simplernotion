@@ -55,7 +55,7 @@ You can update the properties of an existing page as follows:
 const page = database.pages.cache.get('page-id');
 
 const updatedProperties = {
-	  Title: "Updated Title",
+	Title: "Updated Title",
     Status: ["In Progress"],
 };
 
@@ -76,7 +76,7 @@ console.log("Duplicated Page ID:", duplicatedPage.id);
 
 ### 6. Deleting a Page
 
-To get users from your Notion workspace:
+To delete a page from your Notion workspace:
 
 ```jsx
 const page = database.pages.cache.get('page-id');
