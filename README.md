@@ -13,8 +13,8 @@ Execute this command in your terminal `npm install simplernotion`.
 First, import the module and initialize the Notion client:
 
 ```jsx
-const NotionClient = require('simplernotion');
-const client = new NotionClient('YOUR_INTEGRATION_TOKEN');
+const Notion = require('simplernotion');
+const client = new Notion.Client('YOUR_INTEGRATION_TOKEN');
 ```
 
 ### 2. Query a Database
@@ -30,21 +30,34 @@ const database = await client.query('database', 'YOUR_DATABASE_ID');
 To create a new page in a Notion database, use the following code:
 
 ```jsx
-const properties = {
-    Title: "My New Page",
-    Status: ["Not Started"],
-};
-
-const markdownContent = `# Heading 1
+const new_page = new Notion.PageBuilder()
+    .setTitle("The Page Title")
+    .setCover('https://website.com/url_to_image.png')
+    .setIcon('👋')
+    .setContent([
+        new Notion.Heading()
+            .setText('Heading Medium')
+            .setType(Notion.HeadingType.Medium)
+            .setColor(Notion.Colors.Orange),
+        new Notion.Divider(),
+        new Notion.Paragraph()
+            .setText('Hello world!'),
+        new Markdown()
+            .setContent(`# Heading 1
 This is **bold text** and //italic text// with __underline__ and ~~strikethrough~~.
 Here's a code block:
 \`\`\`javascript
 console.log("Hello, Notion!");
 \`\`\`
-{blue}This text will appear blue in Notion.{/blue}`;
+{blue}This text will appear blue in Notion.{/blue}`)
+    ])
+    .setProperties({
+    Title: "My New Page",
+    Status: ["Not Started"],
+})
 
-const newPage = await database.pages.create(properties, markdownContent);
-console.log("New Page Created:", newPage.id);
+await database.pages.create({ pages: [new_page] })
+console.log("New Page Created with Success!");
 ```
 
 ### 4. Updating Page Properties
@@ -90,7 +103,8 @@ console.log("Page deleted");
 To get users from your Notion workspace:
 
 ```jsx
-const users = client.users.list();
+const myself = await client.users.fetch("my-notion-id");
+const users = await client.users.list();
 ```
 
 ## Contributing
