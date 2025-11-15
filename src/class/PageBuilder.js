@@ -1,6 +1,7 @@
 "use strict";
 import Utils from '../utils.js';
 import Block from './Blocks/Block.js';
+import Icons from './Notion/Icons.js';
 
 export default class PageBuilder {
     constructor () {
@@ -12,14 +13,18 @@ export default class PageBuilder {
     }
 
     /**
-     * @param {string} icon - The icon of the page
+     * @param {Icons | string} icon - The icon of the page
      * @example
-     * // Set the icon of the page to the speficied image url
+     * // Set the icon of the page to the speficied emoji or Notion's icon
      *  new PageBuilder()
      *      .setIcon("👋")
+     * // Or
+     *  new PageBuilder()
+     *      .setIcon(Icons.Green_arrow_in_rectangle)
      */
     setIcon(icon) {
-        this.icon = icon;
+        // @ts-ignore
+        this.icon = Object.values(Icons).includes(icon) ? { "type": "external", "external": { "url": icon } } : icon;
         return this;
     }
     
@@ -92,7 +97,7 @@ export default class PageBuilder {
             },
             properties: Object.assign({ [titleKey]: { title: [{ type: "text", text: { content: this.title } }] } }, Utils.convertProperties(source.properties, this.properties)),
             cover: this.cover ? { type: "external", external: { url: this.cover } } : undefined,
-            icon: this.icon ? { type: "emoji", emoji: this.icon } : undefined,
+            icon: this.icon instanceof Object ? this.icon : (this.icon ? { type: "emoji", emoji: this.icon } : undefined),
             children: this.content.flatMap(c => c._toNotion()),
         };
     }

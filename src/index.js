@@ -1,6 +1,7 @@
 "use strict";
 import Client from './class/Notion/Client.js';
 import Colors from './class/Notion/Colors.js';
+import Icons from './class/Notion/Icons.js';
 import HeadingType from './class/Blocks/HeadingType.js';
 import Heading from './class/Blocks/Heading.js';
 import Divider from './class/Blocks/Divider.js';
@@ -20,7 +21,7 @@ import Table from './class/Blocks/Table.js';
 import Row from './class/Blocks/Row.js';
 import Cell from './class/Blocks/Cell.js';
 
-export { Client, Colors, HeadingType, Heading, Divider, Paragraph, PageBuilder, ColumnsList, Columns, Markdown, Callout, List, ListItem, ListStyle, Quote, Code, Languages, Table, Row, Cell }
+export { Client, Colors,  Icons, HeadingType, Heading, Divider, Paragraph, PageBuilder, ColumnsList, Columns, Markdown, Callout, List, ListItem, ListStyle, Quote, Code, Languages, Table, Row, Cell }
 
 export default class Notion {
     /**
@@ -35,6 +36,11 @@ export default class Notion {
      * @type {Colors}
      */
     static Colors = Colors;
+    /**
+     * Collection of icons available in Notion.
+     * @type {Icons}
+     */
+    static Icons = Icons;
     /**
      * Collection of languages supported by Notion.
      * @type {Languages}

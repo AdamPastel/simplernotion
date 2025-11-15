@@ -1,6 +1,6 @@
 {
   "name": "simplernotion",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "This project is a simpler way of using the Notion API to interact with your Notion space.",
   "main": "src/index.js",
   "scripts": {
