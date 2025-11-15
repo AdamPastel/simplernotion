@@ -42,7 +42,7 @@ const new_page = new Notion.PageBuilder()
         new Notion.Divider(),
         new Notion.Paragraph()
             .setText('Hello world!'),
-        new Markdown()
+        new Notion.Markdown()
             .setContent(`# Heading 1
 This is **bold text** and //italic text// with __underline__ and ~~strikethrough~~.
 Here's a code block:
@@ -52,9 +52,9 @@ console.log("Hello, Notion!");
 {blue}This text will appear blue in Notion.{/blue}`)
     ])
     .setProperties({
-    Title: "My New Page",
-    Status: ["Not Started"],
-})
+        Title: "My New Page",
+        Status: ["Not Started"],
+    })
 
 await database.pages.create({ pages: [new_page] })
 console.log("New Page Created with Success!");

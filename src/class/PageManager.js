@@ -61,7 +61,6 @@ export default class PageManager {
         let cursor = undefined;
 
         while (hasMore) {
-            console.log(this._data_source)
             const res = await fetch(`https://api.notion.com/v1/data_sources/${this._data_source.id}/query`,
                 {
                     method: 'POST',

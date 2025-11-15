@@ -14,14 +14,13 @@ import List from './class/Blocks/List.js';
 import ListItem from './class/Blocks/ListItem.js';
 import ListStyle from './class/Blocks/ListStyle.js';
 import Quote from './class/Blocks/Quote.js';
-import QuoteSize from './class/Blocks/_QuoteSize.js';
 import Code from './class/Blocks/Code.js';
 import Languages from './class/Notion/Languages.js';
 import Table from './class/Blocks/Table.js';
 import Row from './class/Blocks/Row.js';
 import Cell from './class/Blocks/Cell.js';
 
-export { Client, Colors, HeadingType, Heading, Divider, Paragraph, PageBuilder, ColumnsList, Columns, Markdown, Callout, List, ListItem, ListStyle, Quote, QuoteSize, Code, Languages, Table, Row, Cell }
+export { Client, Colors, HeadingType, Heading, Divider, Paragraph, PageBuilder, ColumnsList, Columns, Markdown, Callout, List, ListItem, ListStyle, Quote, Code, Languages, Table, Row, Cell }
 
 export default class Notion {
     /**
@@ -44,7 +43,6 @@ export default class Notion {
 
     static HeadingType = HeadingType;
     static ListStyle = ListStyle;
-    static QuoteSize = QuoteSize;
 
     static PageBuilder = PageBuilder;
 

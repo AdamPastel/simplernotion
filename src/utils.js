@@ -111,6 +111,11 @@ export default class Utils {
                         "phone_number": properties[KEY]
                     };
                     break;
+                case "place":
+                    notionProperties[KEY] = {
+                        "place": properties[KEY]
+                    };
+                    break;
                 default:
                     throw new Error(`Unknown property type: ${databaseProperties[KEY].type}`);
             }
